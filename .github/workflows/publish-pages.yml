@@ -1,0 +1,56 @@
+name: Publish Data to GitHub Pages
+
+on:
+  push:
+    paths:
+      - 'data/**'
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: 'pages'
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v4
+
+      - name: Prepare publish folder
+        run: |
+          mkdir -p public
+          cp data/*.json public/ 2>/dev/null || echo "No JSON files yet"
+          # CORS headers via a fake index so Pages serves it
+          cat > public/index.html <<'EOF'
+          <!DOCTYPE html><html><head><title>Antares Data</title></head>
+          <body style="font-family:sans-serif;max-width:600px;margin:50px auto;padding:20px;background:#0b0d12;color:#eee">
+          <h1>Antares Data Endpoint</h1>
+          <p>This is the public JSON data feed for the Antares dashboard.</p>
+          <ul>
+            <li><a href="antares-sp500.json" style="color:#ff8866">antares-sp500.json</a></li>
+            <li><a href="antares-russell3000.json" style="color:#ff8866">antares-russell3000.json</a></li>
+          </ul>
+          </body></html>
+          EOF
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: ./public
+
+      - id: deployment
+        name: Deploy to GitHub Pages
+        uses: actions/deploy-pages@v4

@@ -1,0 +1,743 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Antares — tactical stock screener for the patient opportunist" />
+  <title>Antares</title>
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@200;300;400;500;600;700&family=JetBrains+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+
+  <!-- Tailwind + React + Framer Motion + Lucide via CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/framer-motion@11.0.0/dist/framer-motion.js"></script>
+  <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+
+  <style>
+    body { margin: 0; -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; background: #0b0d12; }
+
+    .mono { font-family: 'JetBrains Mono', 'SF Mono', ui-monospace, monospace; font-variant-numeric: tabular-nums; }
+    .num { font-variant-numeric: tabular-nums; font-feature-settings: 'tnum'; }
+    .display { letter-spacing: -0.02em; font-family: 'Inter', system-ui, sans-serif; }
+
+    .scrollbar::-webkit-scrollbar { width: 4px; height: 4px; }
+    .scrollbar::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 4px; }
+    .scrollbar::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.2); }
+
+    .aurora {
+      position: fixed; inset: -10%; pointer-events: none; z-index: 0;
+      background:
+        radial-gradient(ellipse 50% 40% at 12% 15%, rgba(255,107,74,0.18) 0%, transparent 55%),
+        radial-gradient(ellipse 45% 35% at 88% 25%, rgba(180,92,255,0.14) 0%, transparent 55%),
+        radial-gradient(ellipse 60% 45% at 50% 100%, rgba(48,140,255,0.10) 0%, transparent 55%),
+        radial-gradient(ellipse 40% 30% at 80% 85%, rgba(255,107,74,0.10) 0%, transparent 55%);
+      filter: blur(60px);
+      animation: drift 28s ease-in-out infinite alternate;
+    }
+    .aurora.rocket {
+      background:
+        radial-gradient(ellipse 50% 40% at 15% 20%, rgba(180,92,255,0.24) 0%, transparent 55%),
+        radial-gradient(ellipse 45% 35% at 85% 30%, rgba(255,107,74,0.16) 0%, transparent 55%),
+        radial-gradient(ellipse 60% 45% at 50% 100%, rgba(120,60,255,0.14) 0%, transparent 55%);
+    }
+    @keyframes drift {
+      0% { transform: translate(0, 0) scale(1); }
+      50% { transform: translate(2%, -1%) scale(1.05); }
+      100% { transform: translate(-1%, 2%) scale(1); }
+    }
+    .stars {
+      position: fixed; inset: 0; pointer-events: none; z-index: 0; opacity: 0.4;
+      background-image:
+        radial-gradient(1px 1px at 12% 23%, rgba(255,255,255,0.6), transparent),
+        radial-gradient(1px 1px at 45% 67%, rgba(255,255,255,0.4), transparent),
+        radial-gradient(1.5px 1.5px at 78% 34%, rgba(255,255,255,0.5), transparent),
+        radial-gradient(1px 1px at 88% 78%, rgba(255,255,255,0.5), transparent),
+        radial-gradient(1px 1px at 23% 88%, rgba(255,255,255,0.4), transparent),
+        radial-gradient(1.5px 1.5px at 65% 12%, rgba(255,255,255,0.55), transparent);
+    }
+    .glass {
+      background: linear-gradient(180deg, rgba(255,255,255,0.06) 0%, rgba(255,255,255,0.025) 100%);
+      backdrop-filter: blur(40px) saturate(1.8);
+      -webkit-backdrop-filter: blur(40px) saturate(1.8);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 20px;
+      position: relative;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.10), inset 0 -1px 0 rgba(0,0,0,0.2), 0 8px 32px -8px rgba(0,0,0,0.5), 0 30px 60px -20px rgba(0,0,0,0.4);
+    }
+    .glass-flat {
+      background: linear-gradient(180deg, rgba(255,255,255,0.04) 0%, rgba(255,255,255,0.015) 100%);
+      backdrop-filter: blur(30px) saturate(1.6);
+      -webkit-backdrop-filter: blur(30px) saturate(1.6);
+      border: 1px solid rgba(255,255,255,0.06);
+      border-radius: 14px;
+    }
+    .antares-glow { text-shadow: 0 0 30px rgba(255,107,74,0.5), 0 0 60px rgba(255,107,74,0.3), 0 0 90px rgba(255,107,74,0.15); }
+    .rocket-glow { text-shadow: 0 0 30px rgba(180,92,255,0.55), 0 0 60px rgba(180,92,255,0.35), 0 0 90px rgba(180,92,255,0.18); }
+
+    .btn-pill {
+      background: linear-gradient(180deg, rgba(255,255,255,0.10) 0%, rgba(255,255,255,0.04) 100%);
+      backdrop-filter: blur(20px);
+      border: 1px solid rgba(255,255,255,0.10);
+      border-radius: 999px; color: rgba(255,255,255,0.9);
+      font-size: 12px; font-weight: 500; padding: 9px 16px;
+      letter-spacing: 0.01em;
+      transition: all 280ms cubic-bezier(0.16, 1, 0.3, 1);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.12), 0 4px 12px -4px rgba(0,0,0,0.3);
+      cursor: pointer; display: inline-flex; align-items: center; gap: 7px;
+    }
+    .btn-pill:hover { background: linear-gradient(180deg, rgba(255,255,255,0.14) 0%, rgba(255,255,255,0.06) 100%); border-color: rgba(255,255,255,0.18); transform: translateY(-1px); box-shadow: inset 0 1px 0 rgba(255,255,255,0.14), 0 8px 24px -6px rgba(0,0,0,0.4); }
+    .btn-pill:active { transform: translateY(0) scale(0.97); }
+    .btn-primary { background: linear-gradient(180deg, #ff8366 0%, #ff5733 100%); color: white; border: 1px solid rgba(255,255,255,0.2); box-shadow: inset 0 1px 0 rgba(255,255,255,0.3), 0 4px 16px -2px rgba(255,107,74,0.5), 0 8px 24px -8px rgba(255,107,74,0.3); }
+    .btn-primary:hover { background: linear-gradient(180deg, #ff9077 0%, #ff6444 100%); box-shadow: inset 0 1px 0 rgba(255,255,255,0.3), 0 6px 20px -2px rgba(255,107,74,0.6), 0 12px 32px -8px rgba(255,107,74,0.4); }
+
+    .mode-toggle { display: inline-flex; padding: 4px; background: rgba(255,255,255,0.04); backdrop-filter: blur(20px); border: 1px solid rgba(255,255,255,0.06); border-radius: 999px; position: relative; }
+    .mode-tab { padding: 8px 18px; font-size: 12px; font-weight: 500; letter-spacing: 0.02em; color: rgba(255,255,255,0.5); border-radius: 999px; cursor: pointer; transition: color 280ms cubic-bezier(0.16, 1, 0.3, 1); position: relative; z-index: 1; display: inline-flex; align-items: center; gap: 6px; }
+    .mode-tab.active { color: white; }
+    .mode-indicator { position: absolute; top: 4px; bottom: 4px; border-radius: 999px; transition: all 360ms cubic-bezier(0.16, 1, 0.3, 1); }
+
+    .chip { padding: 7px 14px; font-size: 11px; font-weight: 500; letter-spacing: 0.06em; text-transform: uppercase; color: rgba(255,255,255,0.45); border-radius: 999px; cursor: pointer; transition: all 280ms cubic-bezier(0.16, 1, 0.3, 1); border: 1px solid transparent; }
+    .chip:hover { color: rgba(255,255,255,0.85); }
+    .chip.active { color: white; background: rgba(255,255,255,0.10); border-color: rgba(255,255,255,0.12); box-shadow: inset 0 1px 0 rgba(255,255,255,0.10); }
+
+    .search-input { background: rgba(255,255,255,0.04); backdrop-filter: blur(20px); border: 1px solid rgba(255,255,255,0.06); border-radius: 999px; padding: 10px 16px; transition: all 280ms cubic-bezier(0.16, 1, 0.3, 1); }
+    .search-input:focus-within { background: rgba(255,255,255,0.07); border-color: rgba(255,255,255,0.14); }
+
+    .row-glass { transition: all 320ms cubic-bezier(0.16, 1, 0.3, 1); position: relative; }
+    .row-glass::before { content: ''; position: absolute; left: 0; right: 0; top: 0; bottom: 0; background: linear-gradient(90deg, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0.01) 100%); opacity: 0; transition: opacity 320ms cubic-bezier(0.16, 1, 0.3, 1); border-radius: 12px; pointer-events: none; }
+    .row-glass:hover::before { opacity: 1; }
+    .row-glass:hover { transform: translateY(-1px); }
+    .row-glass.selected::before { opacity: 1; background: linear-gradient(90deg, rgba(255,107,74,0.10) 0%, rgba(255,107,74,0.02) 100%); }
+    .row-glass.selected.rocket-row::before { background: linear-gradient(90deg, rgba(180,92,255,0.12) 0%, rgba(180,92,255,0.02) 100%); }
+    .accent-rail { position: absolute; left: -1px; top: 20%; bottom: 20%; width: 2px; background: linear-gradient(180deg, transparent, #ff6b4a, transparent); border-radius: 2px; transform: scaleY(0); transition: transform 380ms cubic-bezier(0.16, 1, 0.3, 1); }
+    .accent-rail.rocket-rail { background: linear-gradient(180deg, transparent, #b45cff, transparent); }
+    .row-glass.selected .accent-rail { transform: scaleY(1); }
+
+    @keyframes breathe-orange { 0%, 100% { box-shadow: 0 0 0 0 rgba(255,107,74,0), inset 0 0 0 1px rgba(255,107,74,0.4); } 50% { box-shadow: 0 0 16px 2px rgba(255,107,74,0.35), inset 0 0 0 1px rgba(255,107,74,0.6); } }
+    @keyframes breathe-purple { 0%, 100% { box-shadow: 0 0 0 0 rgba(180,92,255,0), inset 0 0 0 1px rgba(180,92,255,0.4); } 50% { box-shadow: 0 0 16px 2px rgba(180,92,255,0.4), inset 0 0 0 1px rgba(180,92,255,0.65); } }
+    .breathe-orange { animation: breathe-orange 3.2s ease-in-out infinite; }
+    .breathe-purple { animation: breathe-purple 3.2s ease-in-out infinite; }
+
+    @keyframes shimmer-pass { 0% { transform: translateX(-100%); } 100% { transform: translateX(200%); } }
+    .score-bar-fill { position: relative; overflow: hidden; }
+    .score-bar-fill::after { content: ''; position: absolute; inset: 0; background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent); width: 50%; animation: shimmer-pass 4s ease-in-out infinite; }
+
+    .level-card { position: relative; overflow: hidden; transition: transform 320ms cubic-bezier(0.16, 1, 0.3, 1); }
+    .level-card:hover { transform: translateX(2px); }
+    .level-rail { position: absolute; left: 0; top: 0; bottom: 0; width: 3px; border-radius: 0 2px 2px 0; }
+    .level-rail.entry { background: linear-gradient(180deg, transparent, #ff6b4a, transparent); }
+    .level-rail.target { background: linear-gradient(180deg, transparent, #30d158, transparent); }
+    .level-rail.stop { background: linear-gradient(180deg, transparent, #ff453a, transparent); }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .spinner { animation: spin 1s linear infinite; }
+  </style>
+</head>
+<body style="font-family: 'Inter', system-ui, sans-serif;">
+  <div id="root"></div>
+
+  <script type="text/babel" data-type="module">
+    const { useState, useEffect, useMemo, useRef } = React;
+    const { motion, AnimatePresence } = window.Motion || window.framerMotion || { motion: null, AnimatePresence: null };
+
+    // ============================================================
+    // CONFIG — change DATA_URL_SP500 and DATA_URL_R3K to your GitHub Pages URLs
+    // ============================================================
+    const CONFIG = {
+      DATA_URL_SP500: 'https://YOURUSERNAME.github.io/antares-data/antares-sp500.json',
+      DATA_URL_R3K: 'https://YOURUSERNAME.github.io/antares-data/antares-russell3000.json',
+    };
+
+    // ============================================================
+    // SCORING
+    // ============================================================
+    const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
+    const scaleAroundTarget = (v, t) => (v / t) * 100;
+    const round2 = (v) => Math.round(v * 100) / 100;
+
+    const scoreStandard = (s) => {
+      const rs = clamp(s.relStrength ?? 50, 0, 100);
+      const proxToHigh = 100 - clamp(s.pctFrom52High ?? 30, 0, 50) * 2;
+      const trend = (s.priceVs200dma ?? 0) > 0 ? 70 + Math.min((s.priceVs200dma ?? 0), 30) : 30;
+      const momentum = rs * 0.4 + proxToHigh * 0.3 + trend * 0.3;
+      const revG = clamp(scaleAroundTarget(s.revGrowth ?? 0, 25), 0, 100);
+      const epsG = clamp(scaleAroundTarget(s.epsGrowth ?? 0, 30), 0, 100);
+      const margin = clamp(scaleAroundTarget(s.netMargin ?? 0, 20), 0, 100);
+      const growth = revG * 0.45 + epsG * 0.40 + margin * 0.15;
+      const pe = s.peRatio ?? 999;
+      const peScore = pe <= 0 ? 20 : pe < 15 ? 90 : pe < 25 ? 70 : pe < 40 ? 50 : pe < 60 ? 30 : 15;
+      const fcfYield = clamp(scaleAroundTarget(s.fcfYield ?? 0, 5), 0, 100);
+      const debt = s.debtToEquity ?? 1;
+      const debtScore = debt < 0.3 ? 90 : debt < 0.7 ? 70 : debt < 1.5 ? 50 : debt < 2.5 ? 30 : 15;
+      const value = peScore * 0.40 + fcfYield * 0.35 + debtScore * 0.25;
+      const composite = (momentum + growth + value) / 3;
+      return { momentum: Math.round(momentum), growth: Math.round(growth), value: Math.round(value), composite: Math.round(composite) };
+    };
+
+    const scoreRocket = (s) => {
+      const mcap = s.marketCap ?? 0;
+      const avgVol = s.avgDollarVolume ?? 0;
+      const price = s.price ?? 0;
+      const volSurge = s.volumeSurge ?? 1;
+      const passesGates = mcap >= 0.3 && avgVol >= 5 && price >= 5 && volSurge >= 1.5;
+      if (!passesGates) return { momentum: 0, growth: 0, value: 0, composite: 0, gated: true };
+      const ret1m = s.return1m ?? 0;
+      const ret3m = s.return3m ?? 0;
+      const rs = clamp(s.relStrength ?? 50, 0, 100);
+      const mom1m = clamp(scaleAroundTarget(ret1m, 15), 0, 100);
+      const mom3m = clamp(scaleAroundTarget(ret3m, 30), 0, 100);
+      const proxHigh = 100 - clamp(s.pctFrom52High ?? 30, 0, 50) * 2;
+      const momentum = mom1m * 0.30 + mom3m * 0.30 + rs * 0.25 + proxHigh * 0.15;
+      const revG = clamp(scaleAroundTarget(s.revGrowth ?? 0, 25), 0, 100);
+      const epsG = clamp(scaleAroundTarget(s.epsGrowth ?? 0, 30), 0, 100);
+      const accel = s.revAccel ?? 0;
+      const accelScore = accel > 0 ? Math.min(accel * 5, 30) : 0;
+      const growth = clamp(revG * 0.45 + epsG * 0.45 + accelScore * 0.10, 0, 100);
+      const pe = s.peRatio ?? 999;
+      const value = pe < 0 ? 20 : pe < 100 ? 70 : 30;
+      const composite = momentum * 0.60 + growth * 0.35 + value * 0.05;
+      return { momentum: Math.round(momentum), growth: Math.round(growth), value: Math.round(value), composite: Math.round(composite), gated: false };
+    };
+
+    const buildTradeLevels = (s, scores, mode) => {
+      const price = s.price ?? 0;
+      if (!price) return null;
+      const dominant = scores.momentum >= scores.growth && scores.momentum >= scores.value ? 'momentum' : scores.value >= scores.growth ? 'value' : 'growth';
+      const baseStop = mode === 'rocket' ? 0.13 : dominant === 'momentum' ? 0.08 : dominant === 'value' ? 0.12 : 0.10;
+      const atrPct = (s.atrPct ?? 0) / 100;
+      const volStop = atrPct > 0 ? Math.min(2.5 * atrPct, mode === 'rocket' ? 0.18 : 0.15) : baseStop;
+      const stopPct = Math.max(baseStop, volStop);
+      const entry = price; const target = price * 1.20; const stop = price * (1 - stopPct);
+      const rr = (target - entry) / (entry - stop);
+      return { entry: round2(entry), entryLimit: round2(entry * 0.99), target: round2(target), stop: round2(stop), stopPct: Math.round(stopPct * 1000) / 10, rr: Math.round(rr * 10) / 10, dominant };
+    };
+
+    const getVerdict = (scores, trade, mode) => {
+      if (mode === 'rocket') {
+        if (scores.gated) return { label: 'FILTERED', tone: 'neutral' };
+        if (!trade) return { label: 'NO DATA', tone: 'neutral' };
+        if (scores.composite >= 72 && trade.rr >= 1.4) return { label: 'IGNITE', tone: 'best' };
+        if (scores.composite >= 60 && trade.rr >= 1.2) return { label: 'LIFT', tone: 'good' };
+        if (scores.composite >= 48) return { label: 'PRIMED', tone: 'warn' };
+        return { label: 'GROUNDED', tone: 'bad' };
+      }
+      if (!trade) return { label: 'NO DATA', tone: 'neutral' };
+      if (scores.composite >= 70 && trade.rr >= 1.8) return { label: 'STRONG BUY', tone: 'best' };
+      if (scores.composite >= 60 && trade.rr >= 1.5) return { label: 'BUY', tone: 'good' };
+      if (scores.composite >= 50) return { label: 'WATCH', tone: 'warn' };
+      if (scores.composite >= 35) return { label: 'WEAK', tone: 'bad' };
+      return { label: 'AVOID', tone: 'bad' };
+    };
+
+    // Seed data (fallback if fetch fails)
+    const SEED = [
+      { ticker: 'NVDA', name: 'NVIDIA', sector: 'Tech', price: 142.30, marketCap: 3490, peRatio: 52, revGrowth: 94, epsGrowth: 168, netMargin: 51, fcfYield: 2.1, debtToEquity: 0.22, relStrength: 92, pctFrom52High: 4, priceVs200dma: 18, atrPct: 3.2, return1m: 12, return3m: 28, volumeSurge: 1.8, avgDollarVolume: 28000, revAccel: 4 },
+      { ticker: 'META', name: 'Meta Platforms', sector: 'Tech', price: 595.40, marketCap: 1510, peRatio: 27, revGrowth: 22, epsGrowth: 37, netMargin: 35, fcfYield: 3.6, debtToEquity: 0.30, relStrength: 78, pctFrom52High: 8, priceVs200dma: 9, atrPct: 2.4, return1m: 5, return3m: 14, volumeSurge: 1.3, avgDollarVolume: 12000, revAccel: 2 },
+      { ticker: 'PLTR', name: 'Palantir', sector: 'Tech', price: 67.50, marketCap: 152, peRatio: 240, revGrowth: 30, epsGrowth: 120, netMargin: 19, fcfYield: 0.9, debtToEquity: 0.05, relStrength: 95, pctFrom52High: 2, priceVs200dma: 45, atrPct: 5.8, return1m: 22, return3m: 58, volumeSurge: 2.4, avgDollarVolume: 6500, revAccel: 7 },
+      { ticker: 'RKLB', name: 'Rocket Lab', sector: 'Industrials', price: 28.50, marketCap: 14, peRatio: -50, revGrowth: 71, epsGrowth: 40, netMargin: -15, fcfYield: -2, debtToEquity: 0.25, relStrength: 88, pctFrom52High: 6, priceVs200dma: 38, atrPct: 6.5, return1m: 32, return3m: 78, volumeSurge: 2.8, avgDollarVolume: 850, revAccel: 12 },
+      { ticker: 'APP', name: 'AppLovin', sector: 'Tech', price: 412.00, marketCap: 138, peRatio: 78, revGrowth: 39, epsGrowth: 245, netMargin: 27, fcfYield: 3.2, debtToEquity: 1.20, relStrength: 96, pctFrom52High: 3, priceVs200dma: 52, atrPct: 5.2, return1m: 28, return3m: 65, volumeSurge: 2.1, avgDollarVolume: 1900, revAccel: 8 },
+      { ticker: 'GOOGL', name: 'Alphabet', sector: 'Tech', price: 168.20, marketCap: 2070, peRatio: 22, revGrowth: 15, epsGrowth: 28, netMargin: 28, fcfYield: 4.1, debtToEquity: 0.10, relStrength: 65, pctFrom52High: 6, priceVs200dma: 7, atrPct: 2.0, return1m: 3, return3m: 9, volumeSurge: 1.1, avgDollarVolume: 9000, revAccel: 1 },
+      { ticker: 'COST', name: 'Costco', sector: 'Cons. Staples', price: 942.00, marketCap: 418, peRatio: 56, revGrowth: 8, epsGrowth: 14, netMargin: 3, fcfYield: 1.6, debtToEquity: 0.30, relStrength: 72, pctFrom52High: 3, priceVs200dma: 11, atrPct: 1.6, return1m: 4, return3m: 12, volumeSurge: 1.0, avgDollarVolume: 1800, revAccel: 0 },
+      { ticker: 'HIMS', name: 'Hims & Hers', sector: 'Healthcare', price: 32.80, marketCap: 7, peRatio: 65, revGrowth: 52, epsGrowth: 180, netMargin: 8, fcfYield: 2.5, debtToEquity: 0.10, relStrength: 84, pctFrom52High: 9, priceVs200dma: 28, atrPct: 7.2, return1m: 18, return3m: 42, volumeSurge: 2.5, avgDollarVolume: 320, revAccel: 9 },
+    ];
+
+    // Icon helper using lucide via inline SVG paths
+    const Icon = ({ name, size = 16, className = '', style = {} }) => {
+      const icons = {
+        plus: <path d="M12 5v14M5 12h14"/>,
+        trash: <><path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></>,
+        download: <><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></>,
+        upload: <><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></>,
+        x: <><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></>,
+        search: <><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></>,
+        rocket: <><path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09z"/><path d="m12 15-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2z"/><path d="M9 12H4s.55-3.03 2-4c1.62-1.08 5 0 5 0"/><path d="M12 15v5s3.03-.55 4-2c1.08-1.62 0-5 0-5"/></>,
+        chart: <><path d="M3 3v18h18"/><path d="M18 17V9"/><path d="M13 17V5"/><path d="M8 17v-3"/></>,
+        sparkles: <><path d="M9.937 15.5A2 2 0 0 0 8.5 14.063l-6.135-1.582a.5.5 0 0 1 0-.962L8.5 9.936A2 2 0 0 0 9.937 8.5l1.582-6.135a.5.5 0 0 1 .963 0L14.063 8.5A2 2 0 0 0 15.5 9.937l6.135 1.581a.5.5 0 0 1 0 .964L15.5 14.063a2 2 0 0 0-1.437 1.437l-1.582 6.135a.5.5 0 0 1-.963 0z"/></>,
+        target: <><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></>,
+        trending: <><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></>,
+        shield: <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>,
+      };
+      return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className} style={style}>{icons[name]}</svg>;
+    };
+
+    function Antares() {
+      const [stocks, setStocks] = useState(SEED);
+      const [mode, setMode] = useState('screener');
+      const [filter, setFilter] = useState('ALL');
+      const [sortBy, setSortBy] = useState('composite');
+      const [selected, setSelected] = useState(null);
+      const [showAdd, setShowAdd] = useState(false);
+      const [search, setSearch] = useState('');
+      const [showRocketWarning, setShowRocketWarning] = useState(false);
+      const [rocketAcknowledged, setRocketAcknowledged] = useState(false);
+      const [dataSource, setDataSource] = useState('sp500'); // 'sp500' | 'russell3000' | 'local'
+      const [loading, setLoading] = useState(false);
+      const [lastFetched, setLastFetched] = useState(null);
+      const [fetchError, setFetchError] = useState(null);
+
+      // Auto-fetch on mount and when source changes
+      useEffect(() => {
+        if (dataSource === 'local') return;
+        const url = dataSource === 'russell3000' ? CONFIG.DATA_URL_R3K : CONFIG.DATA_URL_SP500;
+        if (url.includes('YOURUSERNAME')) {
+          setFetchError('configure');
+          return;
+        }
+        setLoading(true); setFetchError(null);
+        fetch(url + '?t=' + Date.now())
+          .then(r => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+          .then(data => {
+            if (Array.isArray(data) && data.length > 0) {
+              setStocks(data);
+              setLastFetched(new Date());
+            } else {
+              throw new Error('Empty data');
+            }
+          })
+          .catch(e => { setFetchError(e.message); console.warn('Fetch failed:', e); })
+          .finally(() => setLoading(false));
+      }, [dataSource]);
+
+      useEffect(() => { if (mode === 'rocket' && !rocketAcknowledged) setShowRocketWarning(true); }, [mode, rocketAcknowledged]);
+
+      const enriched = useMemo(() => stocks.map((s) => {
+        const scores = mode === 'rocket' ? scoreRocket(s) : scoreStandard(s);
+        const trade = scores.gated ? null : buildTradeLevels(s, scores, mode);
+        const verdict = getVerdict(scores, trade, mode);
+        return { ...s, scores, trade, verdict };
+      }), [stocks, mode]);
+
+      const filtered = useMemo(() => {
+        let arr = enriched;
+        if (mode === 'rocket') {
+          arr = arr.filter((s) => !s.scores.gated);
+          if (filter === 'BUY') arr = arr.filter((s) => ['IGNITE', 'LIFT'].includes(s.verdict.label));
+          if (filter === 'WATCH') arr = arr.filter((s) => s.verdict.label === 'PRIMED');
+        } else {
+          if (filter === 'BUY') arr = arr.filter((s) => ['STRONG BUY', 'BUY'].includes(s.verdict.label));
+          if (filter === 'WATCH') arr = arr.filter((s) => s.verdict.label === 'WATCH');
+        }
+        if (search) {
+          const q = search.toLowerCase();
+          arr = arr.filter((s) => s.ticker.toLowerCase().includes(q) || s.name.toLowerCase().includes(q));
+        }
+        arr = [...arr].sort((a, b) => {
+          if (sortBy === 'composite') return b.scores.composite - a.scores.composite;
+          if (sortBy === 'momentum') return b.scores.momentum - a.scores.momentum;
+          if (sortBy === 'growth') return b.scores.growth - a.scores.growth;
+          if (sortBy === 'value') return b.scores.value - a.scores.value;
+          if (sortBy === 'rr') return (b.trade?.rr ?? 0) - (a.trade?.rr ?? 0);
+          return 0;
+        });
+        return arr;
+      }, [enriched, filter, sortBy, search, mode]);
+
+      const stats = useMemo(() => {
+        const isRocket = mode === 'rocket';
+        const visible = enriched.filter((s) => !s.scores.gated);
+        return {
+          total: visible.length,
+          top: visible.filter(s => s.verdict.label === (isRocket ? 'IGNITE' : 'STRONG BUY')).length,
+          mid: visible.filter(s => s.verdict.label === (isRocket ? 'LIFT' : 'BUY')).length,
+          avg: Math.round(visible.reduce((a, s) => a + s.scores.composite, 0) / Math.max(visible.length, 1)),
+        };
+      }, [enriched, mode]);
+
+      const addStock = (s) => { setStocks([...stocks, s]); setShowAdd(false); };
+      const removeStock = (ticker) => { setStocks(stocks.filter((s) => s.ticker !== ticker)); if (selected?.ticker === ticker) setSelected(null); };
+      const exportJSON = () => {
+        const blob = new Blob([JSON.stringify(stocks, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a'); a.href = url; a.download = 'antares-data.json'; a.click();
+      };
+      const importJSON = (e) => {
+        const file = e.target.files[0]; if (!file) return;
+        const reader = new FileReader();
+        reader.onload = (ev) => { try { const data = JSON.parse(ev.target.result); if (Array.isArray(data)) { setStocks(data); setDataSource('local'); } } catch { alert('Invalid JSON'); } };
+        reader.readAsText(file);
+      };
+
+      const isRocket = mode === 'rocket';
+
+      return (
+        <div className="min-h-screen relative overflow-hidden" style={{ background: '#0b0d12' }}>
+          <div className={`aurora ${isRocket ? 'rocket' : ''}`} />
+          <div className="stars" />
+
+          {/* HEADER */}
+          <header className="relative z-10 px-6 md:px-10 pt-10 pb-6 animate-fade-in" style={{ animation: 'fadeInDown 0.8s cubic-bezier(0.16, 1, 0.3, 1)' }}>
+            <div className="max-w-[1500px] mx-auto">
+              <div className="flex items-end justify-between gap-8 flex-wrap">
+                <div>
+                  <div className="flex items-center gap-2 mb-3">
+                    <div className="h-1 w-1 rounded-full" style={{ background: '#ff8866', boxShadow: '0 0 12px rgba(255,107,74,0.8)' }} />
+                    <span className="text-[10px] uppercase tracking-[0.4em] text-white/40">α Scorpii · Tactical Screener</span>
+                  </div>
+                  <h1 className={`display text-[64px] md:text-[88px] leading-[0.85] text-white ${isRocket ? 'rocket-glow' : 'antares-glow'}`} style={{ fontWeight: 200 }}>
+                    Antares
+                  </h1>
+                  <p className="text-sm text-white/55 mt-4 font-light tracking-wide">
+                    Signal, separated from noise. Built for a six-month horizon.
+                  </p>
+                </div>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <button onClick={() => setShowAdd(true)} className="btn-pill btn-primary"><Icon name="plus" size={13}/> Add Ticker</button>
+                  <button onClick={exportJSON} className="btn-pill"><Icon name="download" size={13}/> Export</button>
+                  <label className="btn-pill cursor-pointer"><Icon name="upload" size={13}/> Import<input type="file" accept=".json" onChange={importJSON} className="hidden"/></label>
+                </div>
+              </div>
+
+              {/* MODE TOGGLE + DATA SOURCE */}
+              <div className="mt-8 flex items-center gap-4 flex-wrap">
+                <div className="mode-toggle">
+                  <div className="mode-indicator" style={{
+                    width: 'calc(50% - 4px)',
+                    left: mode === 'screener' ? '4px' : 'calc(50% + 0px)',
+                    background: mode === 'rocket' ? 'linear-gradient(180deg, rgba(180,92,255,0.35) 0%, rgba(180,92,255,0.18) 100%)' : 'linear-gradient(180deg, rgba(255,107,74,0.32) 0%, rgba(255,107,74,0.16) 100%)',
+                    border: mode === 'rocket' ? '1px solid rgba(180,92,255,0.4)' : '1px solid rgba(255,107,74,0.4)',
+                  }} />
+                  <div onClick={() => setMode('screener')} className={`mode-tab ${mode === 'screener' ? 'active' : ''}`}><Icon name="chart" size={13}/> Screener</div>
+                  <div onClick={() => setMode('rocket')} className={`mode-tab ${mode === 'rocket' ? 'active' : ''}`}><Icon name="rocket" size={13}/> Rocket Mode</div>
+                </div>
+
+                <div className="mode-toggle">
+                  <div className="mode-indicator" style={{
+                    width: 'calc(50% - 4px)',
+                    left: dataSource === 'sp500' ? '4px' : 'calc(50% + 0px)',
+                    background: 'linear-gradient(180deg, rgba(255,255,255,0.14) 0%, rgba(255,255,255,0.06) 100%)',
+                    border: '1px solid rgba(255,255,255,0.15)',
+                  }} />
+                  <div onClick={() => setDataSource('sp500')} className={`mode-tab ${dataSource === 'sp500' ? 'active' : ''}`}>S&P 500</div>
+                  <div onClick={() => setDataSource('russell3000')} className={`mode-tab ${dataSource === 'russell3000' ? 'active' : ''}`}>Russell 3000</div>
+                </div>
+
+                <div className="text-[10px] uppercase tracking-[0.2em] text-white/35">
+                  {loading && <span className="text-amber-300">⟳ Fetching…</span>}
+                  {!loading && lastFetched && <span>Fresh · {lastFetched.toLocaleTimeString([], {hour: '2-digit', minute: '2-digit'})}</span>}
+                  {!loading && fetchError === 'configure' && <span className="text-amber-300">⚠ Configure DATA_URL in index.html</span>}
+                  {!loading && fetchError && fetchError !== 'configure' && <span className="text-red-300">⚠ Using seed data ({fetchError})</span>}
+                </div>
+              </div>
+
+              {/* STATS */}
+              <div className="mt-6 grid grid-cols-2 md:grid-cols-4 gap-4">
+                <StatCard label="Tickers Tracked" value={stats.total} />
+                <StatCard label={isRocket ? 'Ignites' : 'Strong Buys'} value={stats.top} accent={isRocket ? 'rocket' : 'best'} />
+                <StatCard label={isRocket ? 'Lift Signals' : 'Buy Signals'} value={stats.mid} accent="good" />
+                <StatCard label="Avg Composite" value={stats.avg} suffix="/100" />
+              </div>
+            </div>
+          </header>
+
+          {/* CONTROLS */}
+          <div className="relative z-10 px-6 md:px-10 py-5">
+            <div className="max-w-[1500px] mx-auto flex items-center gap-4 md:gap-6 flex-wrap">
+              <div className="search-input flex items-center gap-2 flex-1 min-w-[220px] max-w-md">
+                <Icon name="search" size={14} style={{ color: 'rgba(255,255,255,0.4)' }} />
+                <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search ticker or company…" className="flex-1 bg-transparent text-sm text-white outline-none" style={{ '::placeholder': { color: 'rgba(255,255,255,0.35)' } }} />
+              </div>
+              <div className="flex items-center gap-1">
+                <span className="text-[10px] uppercase tracking-[0.2em] text-white/40 mr-2">Show</span>
+                {['ALL', 'BUY', 'WATCH'].map((f) => <button key={f} onClick={() => setFilter(f)} className={`chip ${filter === f ? 'active' : ''}`}>{f}</button>)}
+              </div>
+              <div className="flex items-center gap-1">
+                <span className="text-[10px] uppercase tracking-[0.2em] text-white/40 mr-2">Sort</span>
+                {[{ k: 'composite', l: 'Composite' }, { k: 'momentum', l: 'Mo' }, { k: 'growth', l: 'Gr' }, { k: 'value', l: 'Va' }, { k: 'rr', l: 'R:R' }].map((s) => <button key={s.k} onClick={() => setSortBy(s.k)} className={`chip ${sortBy === s.k ? 'active' : ''}`}>{s.l}</button>)}
+              </div>
+            </div>
+          </div>
+
+          {/* MAIN */}
+          <main className="relative z-10 px-6 md:px-10 pb-12">
+            <div className="max-w-[1500px] mx-auto grid lg:grid-cols-[1fr_460px] gap-6">
+              <div className="glass overflow-hidden">
+                <div className="grid grid-cols-[60px_1fr_50px_50px_50px_60px_60px_92px] gap-3 px-6 py-4 border-b border-white/[0.06] text-[10px] uppercase tracking-[0.2em] text-white/40">
+                  <div>Tkr</div><div>Company</div>
+                  <div className="text-right">Mo</div><div className="text-right">Gr</div><div className="text-right">Va</div>
+                  <div className="text-right" style={{ color: isRocket ? 'rgba(180,92,255,0.7)' : 'rgba(255,107,74,0.7)' }}>Comp</div>
+                  <div className="text-right">R:R</div><div className="text-right">Verdict</div>
+                </div>
+                <div className="scrollbar max-h-[64vh] overflow-y-auto px-2">
+                  {filtered.map((s, i) => (
+                    <div key={`${s.ticker}-${mode}`} onClick={() => setSelected(s)}
+                         className={`row-glass ${isRocket ? 'rocket-row' : ''} ${selected?.ticker === s.ticker ? 'selected' : ''} cursor-pointer grid grid-cols-[60px_1fr_50px_50px_50px_60px_60px_92px] gap-3 px-4 py-3.5 mx-2 my-0.5 rounded-xl text-sm`}>
+                      <span className={`accent-rail ${isRocket ? 'rocket-rail' : ''}`} />
+                      <div className="mono font-semibold text-white/95 relative z-10">{s.ticker}</div>
+                      <div className="text-white/75 truncate relative z-10">{s.name}<span className="text-white/35 text-xs ml-2">· {s.sector}</span></div>
+                      <ScoreCell v={s.scores.momentum} />
+                      <ScoreCell v={s.scores.growth} />
+                      <ScoreCell v={s.scores.value} />
+                      <ScoreCell v={s.scores.composite} bold accent />
+                      <div className="text-right num text-white/75 relative z-10">{s.trade?.rr ?? '—'}</div>
+                      <div className="text-right relative z-10"><VerdictBadge v={s.verdict} /></div>
+                    </div>
+                  ))}
+                  {filtered.length === 0 && <div className="px-4 py-20 text-center text-white/40 text-sm">{isRocket ? 'No candidates pass the Rocket filters.' : 'No tickers match.'}</div>}
+                </div>
+              </div>
+
+              <aside className="glass h-fit lg:sticky lg:top-6 overflow-hidden">
+                {selected ? <DetailPanel key={`${selected.ticker}-${mode}`} stock={selected} onRemove={removeStock} mode={mode} /> : (
+                  <div className="p-16 text-center">
+                    <div className="text-white/50 text-lg font-light">Select a candidate</div>
+                    <div className="text-xs text-white/30 mt-2 tracking-wider uppercase">to view its trade plan</div>
+                  </div>
+                )}
+              </aside>
+            </div>
+          </main>
+
+          <Methodology mode={mode} />
+
+          <footer className="relative z-10 px-6 md:px-10 py-8 border-t border-white/[0.05] mt-6">
+            <div className="max-w-[1500px] mx-auto text-xs text-white/40 font-light leading-relaxed">
+              Not financial advice. The 20% / 6-month target is aspirational, not expected. {isRocket && <span className="text-purple-300/80">Rocket-mode candidates are higher variance — expect more failures alongside more outsized winners.</span>} Verify metrics against primary sources, size positions to your own risk tolerance.
+            </div>
+          </footer>
+
+          {showAdd && <AddTickerModal onAdd={addStock} onClose={() => setShowAdd(false)} />}
+          {showRocketWarning && <RocketWarning onAcknowledge={() => { setRocketAcknowledged(true); setShowRocketWarning(false); }} onClose={() => { setMode('screener'); setShowRocketWarning(false); }} />}
+        </div>
+      );
+    }
+
+    const StatCard = ({ label, value, suffix, accent }) => {
+      const color = accent === 'best' ? '#ffb29a' : accent === 'rocket' ? '#d4a5ff' : accent === 'good' ? '#7be09a' : 'white';
+      return (
+        <div className="glass-flat px-6 py-5 transition-transform hover:-translate-y-0.5">
+          <span className="text-[9px] uppercase tracking-[0.25em] text-white/40 block mb-2">{label}</span>
+          <span className="display text-4xl num" style={{ fontWeight: 200, color }}>{value}{suffix && <span className="text-lg text-white/35 ml-1">{suffix}</span>}</span>
+        </div>
+      );
+    };
+
+    const ScoreCell = ({ v, bold, accent }) => {
+      const color = v >= 70 ? '#5be080' : v >= 50 ? '#ffb29a' : v >= 35 ? '#ffe066' : '#ff6b66';
+      return <div className={`text-right num relative z-10 ${bold ? 'font-semibold' : ''} ${accent ? 'text-[15px]' : ''}`} style={{ color }}>{v}</div>;
+    };
+
+    const VerdictBadge = ({ v }) => {
+      const cfg = {
+        best: { color: '#ff8866', bg: 'rgba(255,107,74,0.12)', border: 'rgba(255,107,74,0.35)' },
+        good: { color: '#5be080', bg: 'rgba(48,209,88,0.10)', border: 'rgba(48,209,88,0.30)' },
+        warn: { color: '#ffe066', bg: 'rgba(255,214,10,0.10)', border: 'rgba(255,214,10,0.28)' },
+        bad: { color: '#ff6b66', bg: 'rgba(255,69,58,0.08)', border: 'rgba(255,69,58,0.22)' },
+        neutral: { color: 'rgba(255,255,255,0.5)', bg: 'rgba(255,255,255,0.05)', border: 'rgba(255,255,255,0.10)' },
+      };
+      const c = cfg[v.tone];
+      const isIgnite = v.label === 'IGNITE';
+      const isSB = v.label === 'STRONG BUY';
+      const breathe = isIgnite ? 'breathe-purple' : isSB ? 'breathe-orange' : '';
+      const color = isIgnite ? '#c98aff' : c.color;
+      const bg = isIgnite ? 'rgba(180,92,255,0.14)' : c.bg;
+      const border = isIgnite ? 'rgba(180,92,255,0.4)' : c.border;
+      return <span className={`inline-block px-2.5 py-1 text-[9px] uppercase tracking-[0.15em] font-semibold ${breathe}`} style={{ color, background: bg, border: `1px solid ${border}`, borderRadius: 999 }}>{v.label}</span>;
+    };
+
+    const DetailPanel = ({ stock, onRemove, mode }) => {
+      const { trade, scores, verdict } = stock;
+      const isRocket = mode === 'rocket';
+      return (
+        <div>
+          <div className="p-7 border-b border-white/[0.06]">
+            <div className="flex items-start justify-between mb-3">
+              <div>
+                <div className="display text-5xl text-white tracking-tight" style={{ fontWeight: 200 }}>{stock.ticker}</div>
+                <div className="text-sm text-white/65 mt-1">{stock.name}</div>
+                <div className="text-[10px] uppercase tracking-[0.2em] text-white/35 mt-1">{stock.sector}</div>
+              </div>
+              <button onClick={() => onRemove(stock.ticker)} className="text-white/30 hover:text-red-400 transition-colors p-1.5 rounded-full hover:bg-white/5"><Icon name="trash" size={14}/></button>
+            </div>
+            <div className="flex items-end justify-between mt-5 pt-5 border-t border-white/[0.05]">
+              <div>
+                <div className="display text-4xl num text-white" style={{ fontWeight: 200 }}>${stock.price?.toFixed(2)}</div>
+                <div className="text-[10px] uppercase tracking-[0.2em] text-white/40 mt-1">Current price</div>
+              </div>
+              <VerdictBadge v={verdict} />
+            </div>
+          </div>
+
+          <div className="p-7 border-b border-white/[0.06]">
+            <div className="flex items-center justify-between mb-5">
+              <span className="text-[10px] uppercase tracking-[0.25em] text-white/40">Composite</span>
+              <span className="display text-3xl num" style={{ color: isRocket ? '#c98aff' : '#ff8866', fontWeight: 200 }}>{scores.composite}<span className="text-white/30 text-lg">/100</span></span>
+            </div>
+            <div className="space-y-4">
+              <ScoreBar label="Momentum" v={scores.momentum} delay={0.1} />
+              <ScoreBar label="Growth" v={scores.growth} delay={0.2} />
+              <ScoreBar label="Value" v={scores.value} delay={0.3} />
+            </div>
+          </div>
+
+          {trade && (
+            <div className="p-7 border-b border-white/[0.06]">
+              <div className="flex items-center justify-between mb-5">
+                <span className="text-[10px] uppercase tracking-[0.25em] text-white/40">Trade Plan</span>
+                <span className="text-[10px] uppercase tracking-[0.2em] text-white/45">style · {trade.dominant}</span>
+              </div>
+              <div className="space-y-2.5">
+                <LevelCard cls="entry" icon="target" label="Buy" value={`$${trade.entry}`} sub={`or limit at $${trade.entryLimit}`} />
+                <LevelCard cls="target" icon="trending" label="Target" value={`$${trade.target}`} sub="+20% · six-month goal" />
+                <LevelCard cls="stop" icon="shield" label="Stop" value={`$${trade.stop}`} sub={`−${trade.stopPct}% from entry`} />
+              </div>
+              <div className="pt-5 mt-5 border-t border-white/[0.05] flex items-baseline justify-between">
+                <span className="text-[10px] uppercase tracking-[0.25em] text-white/40">Reward : Risk</span>
+                <span className="display text-2xl num" style={{ fontWeight: 200, color: trade.rr >= 2 ? '#5be080' : trade.rr >= 1.5 ? '#ff8866' : '#ff6b66' }}>{trade.rr}<span className="text-white/30 text-base"> : 1</span></span>
+              </div>
+            </div>
+          )}
+
+          <div className="p-7">
+            <div className="text-[10px] uppercase tracking-[0.25em] text-white/40 mb-5">Snapshot</div>
+            <div className="grid grid-cols-2 gap-x-6 gap-y-3 text-xs">
+              <Metric label="Market Cap" value={stock.marketCap ? `$${stock.marketCap}B` : '—'} />
+              <Metric label="P/E" value={stock.peRatio ?? '—'} />
+              <Metric label="Rev Growth" value={stock.revGrowth != null ? `${stock.revGrowth}%` : '—'} />
+              <Metric label="EPS Growth" value={stock.epsGrowth != null ? `${stock.epsGrowth}%` : '—'} />
+              <Metric label="Net Margin" value={stock.netMargin != null ? `${stock.netMargin}%` : '—'} />
+              <Metric label="FCF Yield" value={stock.fcfYield != null ? `${stock.fcfYield}%` : '—'} />
+              <Metric label="Debt/Equity" value={stock.debtToEquity ?? '—'} />
+              <Metric label="Rel Strength" value={stock.relStrength ?? '—'} />
+              <Metric label="% from 52H" value={stock.pctFrom52High != null ? `−${stock.pctFrom52High}%` : '—'} />
+              <Metric label="vs 200DMA" value={stock.priceVs200dma != null ? `${stock.priceVs200dma > 0 ? '+' : ''}${stock.priceVs200dma}%` : '—'} />
+              {isRocket && <><Metric label="1M Return" value={stock.return1m != null ? `+${stock.return1m}%` : '—'} /><Metric label="Volume Surge" value={stock.volumeSurge != null ? `${stock.volumeSurge}×` : '—'} /></>}
+            </div>
+          </div>
+        </div>
+      );
+    };
+
+    const ScoreBar = ({ label, v, delay }) => {
+      const [width, setWidth] = useState(0);
+      useEffect(() => { const t = setTimeout(() => setWidth(v), delay * 1000); return () => clearTimeout(t); }, [v, delay]);
+      const color = v >= 70 ? '#5be080' : v >= 50 ? '#ff8866' : v >= 35 ? '#ffd60a' : '#ff6b66';
+      return (
+        <div>
+          <div className="flex justify-between text-xs mb-2"><span className="text-white/70">{label}</span><span className="num text-white/90 font-medium">{v}</span></div>
+          <div className="h-[3px] bg-white/[0.05] relative overflow-hidden rounded-full">
+            <div className="score-bar-fill h-full rounded-full" style={{ width: `${width}%`, background: color, boxShadow: `0 0 12px ${color}66`, transition: 'width 1.4s cubic-bezier(0.16, 1, 0.3, 1)' }} />
+          </div>
+        </div>
+      );
+    };
+
+    const LevelCard = ({ cls, icon, label, value, sub }) => (
+      <div className="level-card glass-flat pl-5 pr-4 py-3.5 flex items-center justify-between">
+        <div className={`level-rail ${cls}`} />
+        <div className="flex items-center gap-3">
+          <span className="text-white/55"><Icon name={icon} size={14}/></span>
+          <div><div className="text-sm text-white/85 font-medium">{label}</div><div className="text-[10px] text-white/40 mt-0.5">{sub}</div></div>
+        </div>
+        <span className="display text-2xl num text-white" style={{ fontWeight: 200 }}>{value}</span>
+      </div>
+    );
+
+    const Metric = ({ label, value }) => (
+      <div className="flex justify-between border-b border-white/[0.04] py-2"><span className="text-white/45">{label}</span><span className="num text-white/90">{value}</span></div>
+    );
+
+    const Methodology = ({ mode }) => {
+      const isRocket = mode === 'rocket';
+      const standardItems = [
+        { t: 'Momentum', sub: '40 · 30 · 30', body: 'Relative strength against the S&P, proximity to fifty-two-week highs, and price above its two-hundred day moving average. Leaders tend to keep leading.' },
+        { t: 'Growth', sub: '45 · 40 · 15', body: 'Revenue growth, earnings growth, and net margin. Twenty-five percent top-line and thirty percent bottom-line both earn full marks.' },
+        { t: 'Value', sub: '40 · 35 · 25', body: 'A tiered P/E score, free cash flow yield, and debt-to-equity. A sanity check so the screener does not push you into overpriced stories alone.' },
+        { t: 'Trade Levels', sub: 'Entry · Target · Stop', body: 'Entry at market or one percent limit below. Target plus twenty percent. Stop adjusts to dominant style and volatility.' },
+        { t: 'Verdict', sub: 'Two-gate filter', body: 'A Strong Buy requires composite above seventy and reward-to-risk above one-point-eight. The reward gate prevents chasing well-scored names with mediocre setups.' },
+        { t: 'Data', sub: 'Auto-refresh', body: 'S&P 500 fundamentals refreshed nightly. Russell 3000 universe refreshed weekly. All via GitHub Actions.' },
+      ];
+      const rocketItems = [
+        { t: 'Hard Gates', sub: 'Must pass all', body: 'Market cap above three hundred million. Average dollar volume above five million. Price above five dollars. Volume surge above one-point-five times average.' },
+        { t: 'Momentum', sub: 'Weight 60%', body: 'One-month and three-month returns dominate, supplemented by relative strength. We hunt names already moving.' },
+        { t: 'Growth', sub: 'Weight 35%', body: 'Revenue and earnings growth, with a bonus for acceleration. The most reliable signal of a multi-bagger in the making.' },
+        { t: 'Value', sub: 'Weight 5%', body: 'Barely scored. Just enough to penalize zombie companies. In Rocket mode, price comes second to thesis.' },
+        { t: 'Wider Stops', sub: '13–18%', body: 'Volatile names need room to breathe. Tight stops will shake you out of winners before they fly.' },
+        { t: 'The Warning', sub: 'High variance', body: 'Rocket picks surface outsized winners and also more failures. Size positions smaller. Take many bets, not one.' },
+      ];
+      const items = isRocket ? rocketItems : standardItems;
+      return (
+        <section className="relative z-10 max-w-[1500px] mx-auto px-6 md:px-10 py-14 border-t border-white/[0.05] mt-6">
+          <div className="flex items-baseline gap-3 mb-10">
+            <Icon name="sparkles" size={14} style={{ color: isRocket ? 'rgba(180,92,255,0.6)' : 'rgba(255,140,100,0.6)' }} />
+            <span className="text-[10px] uppercase tracking-[0.4em] text-white/40">Method · {isRocket ? 'Rocket Mode' : 'Standard'}</span>
+          </div>
+          <div className="grid md:grid-cols-3 gap-6">
+            {items.map((m) => (
+              <div key={m.t} className="glass-flat p-6 transition-transform hover:-translate-y-1">
+                <div className="flex items-baseline justify-between mb-3">
+                  <span className="text-xl font-light" style={{ color: isRocket ? '#c98aff' : '#ff8866' }}>{m.t}</span>
+                  <span className="text-[10px] uppercase tracking-[0.2em] text-white/35 mono">{m.sub}</span>
+                </div>
+                <p className="text-sm text-white/60 leading-relaxed font-light">{m.body}</p>
+              </div>
+            ))}
+          </div>
+        </section>
+      );
+    };
+
+    const AddTickerModal = ({ onAdd, onClose }) => {
+      const [f, setF] = useState({ ticker: '', name: '', sector: '', price: '', marketCap: '', peRatio: '', revGrowth: '', epsGrowth: '', netMargin: '', fcfYield: '', debtToEquity: '', relStrength: '', pctFrom52High: '', priceVs200dma: '', atrPct: '' });
+      const submit = () => {
+        if (!f.ticker || !f.price) { alert('Ticker and price are required'); return; }
+        const parsed = Object.fromEntries(Object.entries(f).map(([k, v]) => ['ticker', 'name', 'sector'].includes(k) ? [k, v] : [k, v === '' ? null : parseFloat(v)]));
+        parsed.ticker = parsed.ticker.toUpperCase();
+        onAdd(parsed);
+      };
+      const fields = [
+        ['ticker', 'Ticker *', 'NVDA'], ['name', 'Name', 'NVIDIA'], ['sector', 'Sector', 'Tech'],
+        ['price', 'Price *', '142.30'], ['marketCap', 'Mkt Cap ($B)', '3490'], ['peRatio', 'P/E', '52'],
+        ['revGrowth', 'Rev Growth %', '94'], ['epsGrowth', 'EPS Growth %', '168'], ['netMargin', 'Net Margin %', '51'],
+        ['fcfYield', 'FCF Yield %', '2.1'], ['debtToEquity', 'Debt/Equity', '0.22'], ['relStrength', 'Rel Strength', '92'],
+        ['pctFrom52High', '% from 52H', '4'], ['priceVs200dma', '% vs 200DMA', '18'], ['atrPct', 'ATR %', '3.2'],
+      ];
+      return (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(11,13,18,0.7)', backdropFilter: 'blur(20px)' }} onClick={onClose}>
+          <div className="glass max-w-2xl w-full max-h-[90vh] overflow-y-auto scrollbar" onClick={(e) => e.stopPropagation()}>
+            <div className="p-7 border-b border-white/[0.06] flex justify-between items-center">
+              <div><div className="display text-3xl text-white" style={{ fontWeight: 200 }}>Add Ticker</div><div className="text-xs text-white/50 mt-1">Only ticker and price are required.</div></div>
+              <button onClick={onClose} className="text-white/40 hover:text-white p-2 rounded-full hover:bg-white/5"><Icon name="x" size={20}/></button>
+            </div>
+            <div className="p-7 grid grid-cols-2 gap-4">
+              {fields.map(([k, l, ph]) => (
+                <label key={k} className="text-xs">
+                  <div className="text-white/45 uppercase tracking-[0.15em] text-[10px] mb-2">{l}</div>
+                  <input value={f[k]} onChange={(e) => setF({ ...f, [k]: e.target.value })} placeholder={ph} className="w-full bg-white/[0.04] border border-white/[0.08] px-4 py-2.5 text-white focus:outline-none focus:border-white/25 transition-all rounded-xl" />
+                </label>
+              ))}
+            </div>
+            <div className="p-7 border-t border-white/[0.06] flex justify-end gap-2">
+              <button onClick={onClose} className="btn-pill">Cancel</button>
+              <button onClick={submit} className="btn-pill btn-primary">Add Ticker</button>
+            </div>
+          </div>
+        </div>
+      );
+    };
+
+    const RocketWarning = ({ onAcknowledge, onClose }) => (
+      <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(11,13,18,0.75)', backdropFilter: 'blur(24px)' }}>
+        <div className="glass max-w-md w-full p-10 text-center" style={{ background: 'linear-gradient(180deg, rgba(180,92,255,0.08) 0%, rgba(255,255,255,0.02) 100%)', borderColor: 'rgba(180,92,255,0.2)' }}>
+          <div className="inline-flex items-center justify-center w-16 h-16 rounded-full mb-6" style={{ background: 'rgba(180,92,255,0.15)', boxShadow: '0 0 32px rgba(180,92,255,0.4)' }}>
+            <Icon name="rocket" size={28} style={{ color: '#c98aff' }}/>
+          </div>
+          <div className="display text-3xl text-white mb-3" style={{ fontWeight: 200 }}>Rocket Mode</div>
+          <p className="text-sm text-white/65 leading-relaxed font-light mb-2">This mode surfaces high-variance plays — small-caps, breakout names, and growth stories with explosive potential.</p>
+          <p className="text-sm text-white/65 leading-relaxed font-light mb-8">Many will fail. The ones that work can return more than your standard picks. <span style={{ color: '#c98aff' }}>Size positions small. Take many bets, not one.</span></p>
+          <div className="flex gap-2 justify-center">
+            <button onClick={onClose} className="btn-pill">Back to Screener</button>
+            <button onClick={onAcknowledge} className="btn-pill" style={{ background: 'linear-gradient(180deg, #c98aff 0%, #a040ff 100%)', color: 'white', border: '1px solid rgba(255,255,255,0.2)', boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.3), 0 4px 16px -2px rgba(180,92,255,0.5)' }}>I Understand</button>
+          </div>
+        </div>
+      </div>
+    );
+
+    ReactDOM.createRoot(document.getElementById('root')).render(<Antares />);
+  </script>
+</body>
+</html>

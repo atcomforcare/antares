@@ -1,0 +1,42 @@
+name: Fetch S&P 500 (Daily)
+
+on:
+  schedule:
+    # 22:00 UTC = 6pm ET (market close + 2hrs buffer)
+    - cron: '0 22 * * 1-5'
+  workflow_dispatch:  # allows manual trigger from GitHub UI
+
+permissions:
+  contents: write
+
+jobs:
+  fetch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install yfinance pandas lxml
+
+      - name: Fetch S&P 500 data
+        run: python scripts/fetch_antares.py --tier sp500 --output-dir data
+
+      - name: Commit updated JSON
+        run: |
+          git config user.name "antares-bot"
+          git config user.email "actions@github.com"
+          git add data/antares-sp500.json
+          if git diff --staged --quiet; then
+            echo "No changes to commit"
+          else
+            git commit -m "data: refresh S&P 500 [$(date -u +%Y-%m-%d)]"
+            git push
+          fi
