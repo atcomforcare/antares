@@ -7,6 +7,7 @@ Usage (called by workflows):
 """
 
 import argparse
+import io
 import json
 import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
@@ -14,14 +15,31 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 import pandas as pd
+import requests
 import yfinance as yf
+
+
+# ----- HTTP CLIENT (Wikipedia blocks default urllib User-Agent with 403) -----
+
+USER_AGENT = (
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+    "AppleWebKit/537.36 (KHTML, like Gecko) "
+    "Chrome/126.0.0.0 Safari/537.36"
+)
+
+
+def fetch_html_tables(url):
+    """Fetch a URL with a browser UA and return list of DataFrames."""
+    resp = requests.get(url, headers={"User-Agent": USER_AGENT}, timeout=30)
+    resp.raise_for_status()
+    return pd.read_html(io.StringIO(resp.text))
 
 
 # ----- UNIVERSE BUILDERS -----
 
 def get_sp500():
     url = "https://en.wikipedia.org/wiki/List_of_S%26P_500_companies"
-    df = pd.read_html(url)[0]
+    df = fetch_html_tables(url)[0]
     tickers = [t.replace(".", "-") for t in df["Symbol"].tolist()]
     sectors = dict(zip(tickers, df["GICS Sector"].tolist()))
     print(f"[universe] S&P 500: {len(tickers)} tickers")
@@ -39,7 +57,7 @@ def get_russell3000():
     ]
     for name, url, idx, sym, sec in sources:
         try:
-            df = pd.read_html(url)[idx]
+            df = fetch_html_tables(url)[idx]
             scol = sym if sym in df.columns else "Ticker"
             tks = [str(t).replace(".", "-") for t in df[scol].tolist()]
             for t in tks:

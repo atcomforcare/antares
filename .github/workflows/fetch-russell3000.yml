@@ -24,7 +24,7 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install yfinance pandas lxml
+          pip install yfinance pandas lxml requests
 
       - name: Fetch Russell 3000 data
         run: python scripts/fetch_antares.py --tier russell3000 --output-dir data --max-workers 10
